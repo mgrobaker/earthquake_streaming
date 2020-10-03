@@ -1,11 +1,11 @@
-className: func.myFunc
+className: ExclamationFunction
 tenant: public
 namespace: default
 name: myFunc
 inputs:
 - persistent://public/default/sensors
 output: persistent://public/default/sensors-filtered
-broker-service-url pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650
+broker-service-url: pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650
 
 ##################################
 # Processing 
