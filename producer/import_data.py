@@ -36,8 +36,14 @@ broker1_url = 'pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650'
 client = pulsar.Client(broker1_url)
 producer = client.create_producer(topic='sensors')
 
+i = 0
 for line in sensor_rdgs:
-	producer.send(line)
+    producer.send(line)
+    i += 1
+    if i > 10: break
+
+#if i > 10:
+#       break
     
 #for i in range (10):
 #	producer.send(('Hello-%d' %i).encode('utf-8'))
