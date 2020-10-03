@@ -1,6 +1,7 @@
 import boto3, botocore
 import pulsar
 import time
+import json
 
 BUCKET_NAME = 'grillo-openeew'
 
@@ -39,6 +40,8 @@ producer = client.create_producer(topic='sensors')
 i = 0
 for line in sensor_rdgs:
     producer.send(line)
+    #producer.send(json.dumps(line.decode('utf-8')))
+    #print(json.dumps(line.decode('utf-8')))
     i += 1
     if i > 10: break
 
