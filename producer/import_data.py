@@ -16,9 +16,9 @@ s3 = boto3.resource('s3')
 response = s3.Bucket(BUCKET_NAME).objects.filter(Prefix=PREFIX)
 
 # Output the bucket names
-print('Existing buckets:')
-for obj in response:
-    print(obj)
+#print('Existing buckets:')
+#for obj in response:
+#    print(obj)
 
 #get one of the objects
 s3obj = s3.Object(BUCKET_NAME, FULL_PATH).get()['Body'].read()
@@ -32,8 +32,19 @@ producer = client.create_producer(topic='sensors')
 
 #send messages
 i = 0
+print('parse json (not sending)')
 for line in sensor_rdgs:
-    producer.send(line)
+    data_str = line.decode('utf8')
+    data_dict = json.loads(data_str)
+    data_dict_str = json.dumps(data_dict)
+    
+    print('type():')
+    print(type(data_dict['x']))
+    #print('data_dict_str: ' + data_dict_str)
+    print('x: ')
+    print(data_dict['x'])
+    
+    #producer.send(line)
     #producer.send(json.dumps(line.decode('utf-8')))
     #print(json.dumps(line.decode('utf-8')))
     i += 1
