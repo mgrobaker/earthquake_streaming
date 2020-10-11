@@ -14,10 +14,14 @@ s3 = boto3.resource('s3')
 BUCKET_NAME = 'grillo-openeew'
 OBJ_NAME = '00.jsonl'
 
+YEAR = '2020'
+
+device_id = '010'
+
 #make lists of months, days, and hours, to iterate through
 months_list = list(range(1,13))
 #days_list = range(1,31)
-days_list = list(range(10,15))
+days_list = list(range(1,4))
 hours_list = list(range(0,24))
 
 #convert to 0-padded strings, as required by openeew
@@ -33,21 +37,30 @@ files_sent = 0
 
 #also, i have to iterate through all the JSON files. not just 00
 
+#PREFIX = 'records/country_code=mx/device_id=010/year=2020/month=09/day=17/hour=02/'
+#FULL_PATH = PREFIX + OBJ_NAME
+
 #iterate through the objects in the bucket
 for day in days_list:
     #print('day: {}'.format(day))
     for hour in hours_list:
-        print('HOUR: {}'.format(hour))
-        BUCKET_PATH = 'records/country_code=mx/device_id=010/year=2020/month=09/day={}/hour={}/{}'.format(day,hour,OBJ_NAME)
+        BUCKET_PATH = 'records/country_code=mx/device_id={}/year={}/month={}/day={}/hour={}/{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
+        #BUCKET_PATH = 'records/country_code=mx/device_id=010/year=2020/month=09/day={}/hour={}/{}'.format(day, hour, OBJ_NAME)
+        #print('HOUR: {}'.format(hour))
+        #print('{}'.format(BUCKET_PATH))
 
+        #s3obj = s3.Object(BUCKET_NAME, BUCKET_PATH).get()['Body'].read()
+        
         try:
-            s3obj = s3.Object(BUCKET_NAME, BUCKET_PATH).get()['Body'].read()
+            #s3obj = s3.Object(BUCKET_NAME, BUCKET_PATH).get()['Body'].read()
+            #s3obj = s3.Object(BUCKET_NAME, FULL_PATH).get()['Body'].read()
 
             #download file
-            s3.Bucket(BUCKET_NAME).download_file(BUCKET_PATH, 'test_download.jsonl')
+            download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)            
+            s3.Bucket(BUCKET_NAME).download_file(BUCKET_PATH, download_file_name)
             
-            ##sensor_rdgs = s3obj.splitlines()
-            print('sent: {}'.format(PATH))
+            sensor_rdgs = s3obj.splitlines()
+            print('sent: {}'.format(BUCKET_PATH))
             files_sent += 1
 
             #send messages
