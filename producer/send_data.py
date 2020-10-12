@@ -1,10 +1,11 @@
-import boto3, botocore
+import pulsar
+import time
+
+broker1_url = 'pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650'
 
 #initialize bucket variables
-s3 = boto3.resource('s3')
-BUCKET_NAME = 'grillo-openeew'
-OBJ_NAME = '00.jsonl'
 #TODO: i have to iterate through all the JSON files. not just 00
+OBJ_NAME = '00.jsonl'
 
 YEAR = '2020'
 device_id = '010'
@@ -25,24 +26,29 @@ def set_loop_vars():
     for i in range(0, len(hours_list)):
         hours_list[i] = '{0:02}'.format(hours_list[i])
 
-def download_data():
-    files_downloaded = 0        
+def send_data():
+    files_downloaded = 0
+    client = pulsar.Client(broker1_url)
+    #producer = client.create_producer(topic='sensors', schema=JSONSchema())
+    producer = client.create_producer(topic='sensors')
 
-    #iterate through the objects in the bucket
+    t0 = time.time()
+    #iterate through the downloaded files and send
     for day in days_list:
         #print('day: {}'.format(day))
         for hour in hours_list:
-            BUCKET_PATH = 'records/country_code=mx/device_id={}/year={}/month={}/day={}/hour={}/{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
-            #print('HOUR: {}'.format(hour))
-            #print('{}'.format(BUCKET_PATH))
-
             try:
-                #download file
+                #open file
                 download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
+                file = open(download_file_name,'r').read()
+                file_lines = file.splitlines()
                 
-                s3.Bucket(BUCKET_NAME).download_file(BUCKET_PATH, download_file_name)
+                for line in file_lines:
+                    #print(download_file_name)
+#                    print(line)
+                    producer.send(line.encode('utf-8'))
+                    #producer.send('hi'.encode())
 
-                print('downloaded: {}'.format(BUCKET_PATH))
                 files_downloaded += 1
 
             except:
@@ -50,11 +56,20 @@ def download_data():
                 #this way, the code doesn't fail due to a malformed path
                 continue
 
-    print('NUM FILES DOWNLOADED: {}'.format(files_downloaded))
+    t1 = time.time()
+    send_time = t1-t0
+
+    msgs_per_file = 300
+    print('NUM FILES SENT: {}'.format(files_downloaded))
+    print('SEND TIME: {}'.format(send_time))
+    print('THROUGHPUT (MSGS/SEC): {}'.format(files_downloaded *
+                                             msgs_per_file / send_time))
+    
+    client.close()
 
 def main():
     set_loop_vars()
-    download_data()
+    send_data()
 
 if __name__ == "__main__":
     main()
