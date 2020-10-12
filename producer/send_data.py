@@ -15,7 +15,7 @@ def set_loop_vars():
     global months_list, days_list, hours_list
     months_list = list(range(1,13))
     #days_list = range(1,31)
-    days_list = list(range(1,4))
+    days_list = list(range(1,2))
     hours_list = list(range(0,24))
     
     #convert to 0-padded strings, as required by openeew
@@ -39,15 +39,16 @@ def send_data():
         for hour in hours_list:
             try:
                 #open file
-                download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
-                file = open(download_file_name,'r').read()
-                file_lines = file.splitlines()
+                #download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
+                #file = open(download_file_name,'r').read()
+                #file_lines = file.splitlines()
+                file_lines = range(1,300)
                 
                 for line in file_lines:
                     #print(download_file_name)
 #                    print(line)
-                    producer.send(line.encode('utf-8'))
-                    #producer.send('hi'.encode())
+                    #producer.send(line.encode('utf-8'))
+                    producer.send('hi'.encode())
 
                 files_downloaded += 1
 
