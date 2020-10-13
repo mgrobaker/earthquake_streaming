@@ -3,18 +3,22 @@ import time
 
 broker1_url = 'pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650'
 
-#initialize bucket variables
-#TODO: i have to iterate through all the JSON files. not just 00
-OBJ_NAME = '00.jsonl'
+from import_data import parse_device_list
 
-YEAR = '2020'
-device_id = '010'
+obj_name_list = ['00.jsonl', '05.jsonl',
+                 '10.jsonl', '15.jsonl',
+                 '20.jsonl', '25.jsonl',
+                 '30.jsonl', '35.jsonl',
+                 '40.jsonl', '45.jsonl',
+                 '50.jsonl', '55.jsonl']
+
+YEAR = '2020'                                                                      
+MONTH = '09'   
 
 def set_loop_vars():
     #make lists of months, days, and hours, to iterate through
     global months_list, days_list, hours_list
     months_list = list(range(1,13))
-    #days_list = range(1,31)
     days_list = list(range(1,2))
     hours_list = list(range(0,24))
     
@@ -29,33 +33,38 @@ def set_loop_vars():
 def send_data():
     files_downloaded = 0
     client = pulsar.Client(broker1_url)
-    #producer = client.create_producer(topic='sensors', schema=JSONSchema())
     producer = client.create_producer(topic='sensors')
 
     t0 = time.time()
     #iterate through the downloaded files and send
+
+    
     for day in days_list:
-        #print('day: {}'.format(day))
         for hour in hours_list:
-            try:
-                #open file
-                #download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, months_list[8], day, hour, OBJ_NAME)
-                #file = open(download_file_name,'r').read()
-                #file_lines = file.splitlines()
-                file_lines = range(1,300)
-                
-                for line in file_lines:
-                    #print(download_file_name)
-#                    print(line)
-                    #producer.send(line.encode('utf-8'))
-                    producer.send('hi'.encode())
+            for obj_name in obj_name_list:
+                print('day: {}, hour: {}, time: {}'.format(day, hour, obj_name))
+                for device_id in device_id_list:   
+                    try:
+                        #open file
+                        download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, MONTH, day, hour, obj_name)
+                        file = open(download_file_name,'r').read()
+                        file_lines = file.splitlines()
 
-                files_downloaded += 1
+                        #file_lines = range(1,300)
+                        #test_str = 'hi'.encode()
 
-            except:
-                #if no file is found at this location, skip
-                #this way, the code doesn't fail due to a malformed path
-                continue
+                        for line in file_lines:
+                            #print(download_file_name)
+                            #print(line)
+                            producer.send(line.encode('utf-8'))
+                            #producer.send(test_str)
+
+                        files_downloaded += 1
+
+                    except:
+                        #if no file is found at this location, skip
+                        #this way, the code doesn't fail due to a malformed path
+                        continue
 
     t1 = time.time()
     send_time = t1-t0
@@ -69,7 +78,10 @@ def send_data():
     client.close()
 
 def main():
+    global device_id_list
+
     set_loop_vars()
+    device_id_list = parse_device_list()
     send_data()
 
 if __name__ == "__main__":
