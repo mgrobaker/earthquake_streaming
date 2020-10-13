@@ -4,18 +4,22 @@ import json
 #initialize bucket variables
 s3 = boto3.resource('s3')
 BUCKET_NAME = 'grillo-openeew'
-OBJ_NAME = '00.jsonl'
+obj_name_list = ['00.jsonl', '05.jsonl',
+                 '10.jsonl', '15.jsonl',
+                 '20.jsonl', '25.jsonl',
+                 '30.jsonl', '35.jsonl',
+                 '40.jsonl', '45.jsonl',
+                 '50.jsonl', '55.jsonl']
 
 YEAR = '2020'
 MONTH = '09'
-#so, we want to scale up by 70. 30 devices, and double the days (1 week)
 
 def set_download_loop_vars():
     #make lists of months, days, and hours, to iterate through
     global months_list, days_list, hours_list
     months_list = list(range(1,13))
     #days_list = range(1,31)
-    days_list = list(range(1,8))
+    days_list = list(range(10,15))
     hours_list = list(range(0,24))
     
     #convert to 0-padded strings, as required by openeew
@@ -33,24 +37,25 @@ def download_data():
     for day in days_list:
         #print('day: {}'.format(day))
         for hour in hours_list:
-            for device_id in device_id_list:
-                BUCKET_PATH = 'records/country_code=mx/device_id={}/year={}/month={}/day={}/hour={}/{}'.format(device_id, YEAR, MONTH, day, hour, OBJ_NAME)
-                #print('HOUR: {}'.format(hour))
-                #print('{}'.format(BUCKET_PATH))
+            for obj_name in obj_name_list:
+                for device_id in device_id_list:
+                    BUCKET_PATH = 'records/country_code=mx/device_id={}/year={}/month={}/day={}/hour={}/{}'.format(device_id, YEAR, MONTH, day, hour, obj_name)
+                        #print('HOUR: {}'.format(hour))
+                        #print('{}'.format(BUCKET_PATH))
 
-                try:
-                    #download file
-                    download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, MONTH, day, hour, OBJ_NAME)
+                    try:
+                        #download file
+                        download_file_name = '../input_data/device{}_yr{}_mon{}_day{}_hr{}_{}'.format(device_id, YEAR, MONTH, day, hour, obj_name)
 
-                    s3.Bucket(BUCKET_NAME).download_file(BUCKET_PATH, download_file_name)
+                        s3.Bucket(BUCKET_NAME).download_file(BUCKET_PATH, download_file_name)
 
-                    print('downloaded: {}'.format(BUCKET_PATH))
-                    files_downloaded += 1
+                        print('downloaded: {}'.format(BUCKET_PATH))
+                        files_downloaded += 1
 
-                except:
-                    #if no file is found at this location, skip
-                    #this way, the code doesn't fail due to a malformed path
-                    continue
+                    except:
+                        #if no file is found at this location, skip
+                        #this way, the code doesn't fail due to a malformed path
+                        continue
 
     print('NUM FILES DOWNLOADED: {}'.format(files_downloaded))
 
@@ -80,6 +85,8 @@ def parse_device_list():
             device_id_list.append(line_cols['device_id'])
             latitude_list.append(line_cols['latitude'])
             longitude_list.append(line_cols['longitude'])
+
+    return device_id_list            
             
 def main():
     download_device_list()
