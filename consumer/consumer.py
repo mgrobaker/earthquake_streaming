@@ -13,7 +13,7 @@ conn = psycopg2.connect(
     , password="a")
 
 broker1_url = 'pulsar://ec2-18-223-193-14.us-east-2.compute.amazonaws.com:6650'
-    
+
 def make_insertion_list(country_code, device_id, device_time, x, y, z):
     abs_x = list(map(abs, x))
     abs_y = list(map(abs, y))
@@ -28,7 +28,7 @@ def make_insertion_list(country_code, device_id, device_time, x, y, z):
     mean_z = round(stat.mean(abs_z),2)
 
     insertion_list = []    
-    x_threshold = 0.0
+    x_threshold = 0.05
     y_threshold = x_threshold
     
     if ( (mean_x > x_threshold) and (mean_y > y_threshold)):
@@ -83,6 +83,7 @@ def insert_list(insertion_list):
         cur = conn.cursor()
         #insert all the values
         psy_ext.execute_values(cur, "INSERT INTO accel_data VALUES %s", insertion_list)
+
         #result_msg = cur.fetchall()
         #for line in result_msg:
         #    print(line)
@@ -102,6 +103,7 @@ def insert_granular_list(insertion_list):
 
 def listen(consumer):
     while True:
+        #print('waiting for msgs...')
         msg = consumer.receive()
         try:
             msg_data = msg.data()
@@ -112,15 +114,13 @@ def listen(consumer):
 
             msg_json_str = msg_data.decode('utf8')
             msg_cols = json.loads(msg_json_str)
-            #data_dict_str = json.dumps(data_dict)
-            #print(msg_cols['x'])
 
             insertion_list = make_insertion_list(msg_cols['country_code'],
                 msg_cols['device_id'], msg_cols['device_t'],
                 msg_cols['x'], msg_cols['y'], msg_cols['z'])
 
-            if (len(insertion_list) > 0):
-                insert_list(insertion_list)
+            #if (len(insertion_list) > 0):
+                #insert_list(insertion_list)
             
         except:
             # Message failed to be processed
