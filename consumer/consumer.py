@@ -102,15 +102,20 @@ def insert_granular_list(insertion_list):
         cur.close()
 
 def listen(consumer):
+    msgs_recvd = 0
     while True:
         #print('waiting for msgs...')
         msg = consumer.receive()
         try:
             msg_data = msg.data()
-            print("Received message id={}".format(msg.message_id()))
+            #print("Received message id={}".format(msg.message_id()))
             #print("Received message '{}' id='{}'".format(msg_data, msg.message_id()))
+
             # Acknowledge successful processing of the message
-            consumer.acknowledge(msg)
+            msgs_recvd += 1
+            if msgs_recvd == 1000:
+                consumer.acknowledge_cumulative(msg)
+                msgs_recvd = 0
 
             msg_json_str = msg_data.decode('utf8')
             msg_cols = json.loads(msg_json_str)
@@ -119,11 +124,12 @@ def listen(consumer):
                 msg_cols['device_id'], msg_cols['device_t'],
                 msg_cols['x'], msg_cols['y'], msg_cols['z'])
 
-            #if (len(insertion_list) > 0):
-                #insert_list(insertion_list)
+            if (len(insertion_list) > 0):
+                insert_list(insertion_list)
             
         except:
             # Message failed to be processed
+            print('failed to process')
             consumer.negative_acknowledge(msg)
 
     client.close()
