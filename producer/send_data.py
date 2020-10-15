@@ -19,7 +19,7 @@ def set_loop_vars():
     #make lists of months, days, and hours, to iterate through
     global months_list, days_list, hours_list
     months_list = list(range(1,13))
-    days_list = list(range(1,2))
+    days_list = list(range(2,11))
     hours_list = list(range(0,24))
     
     #convert to 0-padded strings, as required by openeew
@@ -30,15 +30,18 @@ def set_loop_vars():
     for i in range(0, len(hours_list)):
         hours_list[i] = '{0:02}'.format(hours_list[i])
 
+#a required function for asynchronous sending        
+def callback(res, msg):
+    #do not need to do anything with the acknowledgement
+    return
+        
 def send_data():
     files_downloaded = 0
     client = pulsar.Client(broker1_url)
     producer = client.create_producer(topic='sensors')
 
     t0 = time.time()
-    #iterate through the downloaded files and send
-
-    
+    #iterate through the downloaded files and send    
     for day in days_list:
         for hour in hours_list:
             for obj_name in obj_name_list:
@@ -56,8 +59,8 @@ def send_data():
                         for line in file_lines:
                             #print(download_file_name)
                             #print(line)
-                            producer.send(line.encode('utf-8'))
                             #producer.send(test_str)
+                            producer.send_async(line.encode('utf-8'), callback)
 
                         files_downloaded += 1
 
