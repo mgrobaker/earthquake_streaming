@@ -2,7 +2,7 @@ import boto3, botocore
 import pandas as pd
 import numpy as np
 import psycopg2
-import sqlalchemy
+from sqlalchemy import create_engine
 import datetime as dt
 import json
 
@@ -59,6 +59,8 @@ def process_accel_data():
 
     #calculate utc
     sensor_events['start_time_utc'] = pd.to_datetime(sensor_events.loc[:, 'start_time'], unit='s')
+    sensor_events['start_date'] = sensor_events.loc[:, 'start_time_utc'].dt.date
+    
 
     #join to get lat and long in here
     sensor_events.reset_index(inplace=True)
@@ -83,13 +85,21 @@ def process_accel_data():
     print(bucket_ct)
     #print(same_event)
     print(sensor_events)
+    write_sensor_events(sensor_events)
 
 def write_sensor_events(sensor_events):
+    #truncate sensor_events table, to prepare for write
+    cur = conn.cursor()
+    sql = 'drop table if exists sensor_events;'
+    cur.execute(sql)
+    cur.close()
+    
     #write to postgres
+    engine = create_engine('postgresql://pulsarcon:a@localhost:5432/postgres')
+    sensor_events.to_sql('sensor_events', engine)
 
     #write to csv
     sensor_events.to_csv('../csvout/sensor_events.csv',index=False,encoding='utf-8')
-    
     
 def download_device_list():
     file_name = 'devices.jsonl'
