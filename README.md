@@ -6,12 +6,11 @@ Reads accelerometer data to detect earthquakes in real time and enable historica
 2. [Motivation](README.md#motivation)
 3. [Demo](README.md#demo)
 4. [Tech Stack](README.md#tech-stack)
-5. [Code Walkthrough](README.md#processing)
-6. [Future work](README.md#setup)
+5. [Code Walkthrough](README.md#code-walkthrough)
+6. [Future work](README.md#future-work)
 
 # Slides
-I developed this project during my Data Engineering fellowship with Insight Data Science. I presented the results, with an accompanying set of slides.
-Links to the deck and recording of my presentation are below:
+I developed this project during my Data Engineering fellowship with Insight Data Science. I made a video presenting this work; the video and accompany slides can be found below:
 
 [Slide deck](https://docs.google.com/presentation/d/1QIKQ1O4YmnweqfO2Gg-yQMwWrTOK3RKLzsc8yyR0pn8/edit#slide=id.p)
 
@@ -29,18 +28,18 @@ This map shows areas of the world at high risk for earthquakes.
 ## Legacy systems
 Many countries in these high risk zones have built early warning systems. These sytems attempt to detect earthquakes as they are starting.
 
-Such systems have limitations. They are expensive and often slow to develop. Further, there is a lot of rework since each country develops its own earthquake detection system on its own. Finally, the systems themselves often have a high false positive rate and therefore are not very effective.
+Such systems have limitations. They are expensive and often slow to develop. There is rework since each country develops its own earthquake detection system on its own. Finally, the systems themselves often have a high false positive rate and therefore are not very effective.
 
 ## OpenEEW solution
-To address these shortcomings, an organization called OpenEEW (short for "early earthquake warning") has made an open source solution. It detects earthquakes using cheap $50 IoT accelerometers. As of 2020, they have deployed several dozen of these across Latin America, with plans to expand across the globe.
+To address these shortcomings, an organization called [OpenEEW](https://openeew.com/) (short for "early earthquake warning") has made an open source solution. It detects earthquakes using cheap $50 IoT accelerometers. As of 2020, they have deployed several dozen of these across Latin America, with plans to expand across the globe.
 
-They have made the accelerometer data publically available: there is 1TB of it already on S3. This represents 3 years of sensor data, from 2017 to date.
+They have made the accelerometer data publically available on [AWS](https://registry.opendata.aws/grillo-openeew/): there is 1TB of it already on S3. This represents 3 years of sensor data, from 2017 to date.
 
 ## Opportunity to build on OpenEEW
 I reviewed the documentation, code, and data available from OpenEEW. I determined that one area to improve is in building a data platform on top of their data. This would address two use cases:
 
 1. Scale to enable more advanced real time detection
-As OpenEEW grows, I would expect them to add more sensors, which will be sending even more real-time data. Further, they may wish to deploy more advanced earthquake detection models than they are currently running.
+As OpenEEW grows, I would expect them to add more sensors, which will be sending even more real-time data. Further, they may wish to deploy more advanced earthquake detection models than they are currently running. The increased load from additional data and more advanced mdoels would strain their current infrastructure.
 
 2. Study historical earthquake events
 OpenEEW is collecting interesting and valuable data. However, at present there is no method for tagging and studying past earthquakes as detected by the system. Studying past earthquakes is likely of interest for analysts and researchers.
@@ -61,7 +60,7 @@ I deployed a Pulsar cluster using the "from bare metal" guide, available from Pu
 
 The cluster contained the Pulsar brokers, bookies, and zookeeper. Two separate machines were used as the Pulsar producer and consumer.
 
-The producer pulled down data from the OpenEEW S3 bucket, and then sent it to the Pulsar cluster. A simple threshold is used to detect high acceleration values. When this threshold is triggered (ie, real time detection), data is sent to Postgres for historical analysis.
+The producer pulled down data from the OpenEEW S3 bucket, and then sent it to the Pulsar cluster. A simple threshold is used to detect high acceleration values. When this threshold is triggered (ie, due to real time detection), data is sent to Postgres for historical analysis. Finally, that historical data can be viewed in Tableau after applying some transformations in Postgres.
 
 Here is a picture of the whole tech stack:
 ![image](https://user-images.githubusercontent.com/5614366/101184543-da0aed00-361e-11eb-8efc-a668cfe39458.png)
@@ -70,7 +69,8 @@ My AWS instances:
 
 ![image](https://user-images.githubusercontent.com/5614366/101184635-f3ac3480-361e-11eb-96cc-bebe87b5071b.png)
 
-This shows how Pulsar cluster interacts with clients. Further details are available on the Pulsar website
+
+This shows how Pulsar cluster interacts with clients (further diagrams are available in Pulsar docs)
 
 ![image](https://user-images.githubusercontent.com/5614366/101184716-0888c800-361f-11eb-9e41-731582ec174b.png)
 
@@ -78,7 +78,7 @@ This shows how Pulsar cluster interacts with clients. Further details are availa
 This section walks through the code available in this repo.
 
 ## Code run on producer
-This code is run on a producer EC2 instance that sends data to Pulsar.
+These scripts are run on a producer EC2 instance that sends data to Pulsar.
 
 `producer/import_data.py`
 
@@ -89,6 +89,7 @@ As shown in the code, I am only downloading a subset of the data, by limiting to
 OpenEEW has a library for downloading their data, but it is not functioning properly at present. I opened a ticket to report this bug. I had to implement the data pulling on my own; import_data.py would have been much shorter if the OpenEEW library had been working.
 
 download_data() is the longest function in the file.
+
 
 `producer/send_data.py`
 
