@@ -31,7 +31,7 @@ Many countries in these high risk zones have built early warning systems. These 
 Such systems have limitations. They are expensive and often slow to develop. There is rework since each country develops its own earthquake detection system on its own. Finally, the systems themselves often have a high false positive rate and therefore are not very effective.
 
 ### OpenEEW solution
-To address these shortcomings, an organization called [OpenEEW](https://openeew.com/) (short for "early earthquake warning") has made an open source solution. It detects earthquakes using cheap $50 IoT accelerometers. As of 2020, they have deployed several dozen of these across Latin America, with plans to expand across the globe.
+To address these shortcomings, an organization called [OpenEEW](https://openeew.com/) (EEW="early earthquake warning") has made an open source solution. It detects earthquakes using cheap $50 IoT accelerometers. As of 2020, they have deployed several dozen of these across Latin America, with plans to expand across the globe.
 
 They have made the accelerometer data publically available on [AWS](https://registry.opendata.aws/grillo-openeew/): there is 1TB of it already on S3. This represents 3 years of sensor data, from 2017 to date.
 
@@ -125,7 +125,7 @@ The business purpose here is to group up acceleration readings into what I am ca
 As mentioned, I deployed a Pulsar cluster on AWS. I do not include the configuration files I used for that cluster. The code in this repo would have to be modified with the connection details of the particular Pulsar cluster you are connecting to.
 
 # Future work
-Given more time, here are some interesting areas to work on to further this project.
+Here are some interesting areas for further work on this project
 
 ### Improve Pulsar usage
 #### Topic architecture
