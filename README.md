@@ -80,7 +80,7 @@ This section walks through the code available in this repo.
 ## Code run on producer
 These scripts are run on a producer EC2 instance that sends data to Pulsar.
 
-`producer/import_data.py`
+`producer/import_data.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/producer/import_data.py)
 
 This pulls down data from OpenEEW's S3 bucket by using the boto library, and stores it as local files.
 
@@ -91,7 +91,7 @@ OpenEEW has a library for downloading their data, but it is not functioning prop
 download_data() is the longest function in the file.
 
 
-`producer/send_data.py`
+`producer/send_data.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/producer/send_data.py)
 
 This sends the data to the Pulsar cluster located at broker1_url. The logic is similar to import_data.py, but with some differences. It loops through the desired time ranges to locate and open the relevant data files. It then steps through each line of the file and sends each line to Pulsar.
 
@@ -101,7 +101,7 @@ send_data() is the longest function in the file. This function also contains som
 This code is run on a consumer EC2 instance that receives data from Pulsar.
 I also installed postgres on this same instance. Postgres could be put on another machine instead, if an alternative architecture is desired.
 
-`consumer/consumer.py`
+`consumer/consumer.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/consumer/consumer.py)
 
 This listens for messages being sent to the topic. As they are received, it checks if the values should be stored for later analysis. If so, it loads them to the local postgres database.
 
@@ -115,7 +115,8 @@ We create a new row for postgres, which has the same number of columns as the ta
 
 Finally, back in the listen function, we insert the data into postgres.
 
-`consumer/process_accel_data.py`
+
+`consumer/process_accel_data.py`  [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/consumer/process_accel_data.py)
 
 This script applies only to the postgres database. It does not connect to the Pulsar cluster. Whereas consumer.py would be running all the time, process_accel_data.py could be run on a daily or weekly basis.
 
