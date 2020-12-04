@@ -47,7 +47,7 @@ OpenEEW is collecting interesting and valuable data. However, at present there i
 A data platform would help enable both of these use cases.
 
 # Demo
-This demo shows how some historical earthquakes are captured by my solution. I am visualizing the data in Tableau.
+This demo some historical earthquakes are captured by my solution. I am visualizing the data in Tableau.
 
 Larger circles indicate earthquakes of higher intensity. Darker circles indicate earthquakes with longer durations. The circles are at sensor locations in Mexico.
 
@@ -69,8 +69,7 @@ My AWS instances:
 
 ![image](https://user-images.githubusercontent.com/5614366/101184635-f3ac3480-361e-11eb-96cc-bebe87b5071b.png)
 
-
-This shows how Pulsar cluster interacts with clients (further diagrams are available in Pulsar docs)
+This shows how Pulsar cluster interacts with clients (further diagrams are available in Pulsar docs):
 
 ![image](https://user-images.githubusercontent.com/5614366/101184716-0888c800-361f-11eb-9e41-731582ec174b.png)
 
@@ -82,14 +81,13 @@ These scripts are run on a producer EC2 instance that sends data to Pulsar.
 
 `producer/import_data.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/producer/import_data.py)
 
-This pulls down data from OpenEEW's S3 bucket by using the boto library, and stores it as local files.
+This pulls down data from OpenEEW's S3 bucket by using the boto library, and stores the data on the consumer.
 
 As shown in the code, I am only downloading a subset of the data, by limiting to specific dates and locations. I did not need all history for the purposes of this project.
 
-OpenEEW has a library for downloading their data, but it is not functioning properly at present. I opened a ticket to report this bug. I had to implement the data pulling on my own; import_data.py would have been much shorter if the OpenEEW library had been working.
+OpenEEW has a library for downloading their data, but it is not functioning properly right now. I opened a [ticket](https://github.com/openeew/openeew-python/issues/15) to report this bug. I had to implement the data pulling on my own; import_data.py would have been much shorter if the OpenEEW library had been working.
 
 download_data() is the longest function in the file.
-
 
 `producer/send_data.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/producer/send_data.py)
 
@@ -109,7 +107,7 @@ Let's recall the use case here. In this project, we are playing back history fro
 
 I applied a simple threshold to determine if an accelerometer reading is "interesting". My heuristic just says, if the reading is above some level, then let's save it in postgres. (I didn't build an advanced earthquake detection algorithm, since this is not a data science project.)
 
-Returning to the code: there are helper functions to make and insert lists. make_insertion_list is called on every line (second) of data. That line contains ~35 readings each for x, y, and z accelerometer readings. While we could store every one of those readings, for simplicity we aggregate it up to the second level. We take the max and mean of the readings, and then check to see if the mean exceeds the threshold. If it does, then it is "interesting" and we want to store it.
+Returning to the code: there are helper functions to make and insert lists. make_insertion_list is called on every line (=1 sec) of data. Each line contains ~35 readings for x, y, and z accelerometer readings. While we could store every one of those readings, for simplicity we aggregate it up to the sec level. We take the max and mean of the readings, and then check to see if the mean exceeds the threshold. If it does, then it is "interesting" and we want to store it.
 
 We create a new row for postgres, which has the same number of columns as the table we will insert them in. The function returns a list of these rows.
 
@@ -128,7 +126,7 @@ The business purpose here is to group up acceleration readings into what I am ca
 As mentioned, I deployed a Pulsar cluster on AWS. I do not include the configuration files I used for that cluster. The code in this repo would have to be modified with the connection details of the particular Pulsar cluster you are connecting to.
 
 # Future work
-Given more time, here are some interesting areas to work on in this project.
+Given more time, here are some interesting areas to work on to further this project.
 
 ## Improve Pulsar usage
 ### Topic architecture
@@ -141,21 +139,22 @@ A followup to this project might be to deploy that detection function within the
 ### Tiered storage
 One interesting feature that originally attracted me to Pulsar is its ability for tiered storage. This allows you to store past messages in cheap storage such as S3, which you can then query with PulsarSQL. I didn't get time to implement these features of Pulsar but they would be interesting to explore.
 
-## Improve throughput
+## Improve data throughput
 I did some testing around message throughput and tried a few optimizations. However I was not able to increase it significantly. Further work could be done here.
 
 I tried topic partitioning, which enables all the machines in the Pulsar cluster to read from the topic, and not just one. I also tried bulk acknowledgement, which acks many messages at once instead of one by one.
 
 For now, I am doing an async_send, which sends messages as fast as possible without waiting for an acknowledgement.
 
-In my consumer I am also writing to Postgres. I did confirm this is not slowing down the listening to the Pulsar messages.
+In my consumer I am also writing to Postgres. I did confirm this is not responsible for slowing down the receiving of the Pulsar messages.
 
 ## Read real-time OpenEEW data
 You could connect to OpenEEW's real time messaging service and process those messages in Pulsar.
-In this project I played back some of history to simulate the data coming across in real time.
+
+In this project I instead played back some of history to simulate the data coming across in real time.
 
 ## Improve earthquake detection functions
 Optimizing the detection is more of a data science undertaking. However OpenEEW already does have some pretty good detection functions in their [repo](https://github.com/openeew/openeew). This project could use those detection functions.
 
-## Load government earthquake data to postgres
+## Compare other earthquake data to OpenEEW data
 Many national governments store data about earthquakes. You could pull down this data, and land it in postgres. From there you could compare government-reported quakes with OpenEEW-detected quakes to see what the differences are.
