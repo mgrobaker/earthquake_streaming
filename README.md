@@ -25,17 +25,17 @@ This map shows areas of the world at high risk for earthquakes.
 
 ![image](https://user-images.githubusercontent.com/5614366/101183203-2d7c3b80-361d-11eb-818f-42961db6eb6e.png)
 
-## Legacy systems
+### Legacy systems
 Many countries in these high risk zones have built early warning systems. These sytems attempt to detect earthquakes as they are starting.
 
 Such systems have limitations. They are expensive and often slow to develop. There is rework since each country develops its own earthquake detection system on its own. Finally, the systems themselves often have a high false positive rate and therefore are not very effective.
 
-## OpenEEW solution
+### OpenEEW solution
 To address these shortcomings, an organization called [OpenEEW](https://openeew.com/) (short for "early earthquake warning") has made an open source solution. It detects earthquakes using cheap $50 IoT accelerometers. As of 2020, they have deployed several dozen of these across Latin America, with plans to expand across the globe.
 
 They have made the accelerometer data publically available on [AWS](https://registry.opendata.aws/grillo-openeew/): there is 1TB of it already on S3. This represents 3 years of sensor data, from 2017 to date.
 
-## Opportunity to build on OpenEEW
+### Opportunity to build on OpenEEW
 I reviewed the documentation, code, and data available from OpenEEW. I determined that one area to improve is in building a data platform on top of their data. This would address two use cases:
 
 1. Scale to enable more advanced real time detection
@@ -76,7 +76,7 @@ This shows how Pulsar cluster interacts with clients (further diagrams are avail
 # Code Walkthrough
 This section walks through the code available in this repo.
 
-## Code run on producer
+### Code run on producer
 These scripts are run on a producer EC2 instance that sends data to Pulsar.
 
 `producer/import_data.py` [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/producer/import_data.py)
@@ -95,7 +95,7 @@ This sends the data to the Pulsar cluster located at broker1_url. The logic is s
 
 send_data() is the longest function in the file. This function also contains some logic to time how quickly messages are being sent to the cluster.
 
-## Code run on consumer
+### Code run on consumer
 This code is run on a consumer EC2 instance that receives data from Pulsar.
 I also installed postgres on this same instance. Postgres could be put on another machine instead, if an alternative architecture is desired.
 
@@ -113,7 +113,6 @@ We create a new row for postgres, which has the same number of columns as the ta
 
 Finally, back in the listen function, we insert the data into postgres.
 
-
 `consumer/process_accel_data.py`  [link](https://github.com/mgrobaker/earthquake_streaming/blob/master/consumer/process_accel_data.py)
 
 This script applies only to the postgres database. It does not connect to the Pulsar cluster. Whereas consumer.py would be running all the time, process_accel_data.py could be run on a daily or weekly basis.
@@ -122,24 +121,24 @@ This is an ETL job. It reads the table which the consumer has written to ('accel
 
 The business purpose here is to group up acceleration readings into what I am calling sensor events. In the case of consecutive high readings, we have an event. For each such event we identify, we can make a key for it, and store when it started and how long it lasted. We can also calculate and store average and peak values.
 
-## What Isn't Here
+### What Isn't Here
 As mentioned, I deployed a Pulsar cluster on AWS. I do not include the configuration files I used for that cluster. The code in this repo would have to be modified with the connection details of the particular Pulsar cluster you are connecting to.
 
 # Future work
 Given more time, here are some interesting areas to work on to further this project.
 
-## Improve Pulsar usage
-### Topic architecture
+### Improve Pulsar usage
+#### Topic architecture
 Build a more sophisticated topic architecture. Right now, all data is sent to the 'sensors' topic. However, a DAG could be designed to direct messages from this topic to others. For example, we may want subtopics by country, or by intensity of detected acceleration. That is, you might have 'all-sensors' --> 'mexico-sensors' --> 'mexico-quakes'.
 
-### Functions
+#### Functions
 I spent a while trying to deploy functions in Pulsar, and was able to figure most of it out. However I have left the detection function in the consumer for now as it is simpler.
 A followup to this project might be to deploy that detection function within the cluster itself.
 
-### Tiered storage
+#### Tiered storage
 One interesting feature that originally attracted me to Pulsar is its ability for tiered storage. This allows you to store past messages in cheap storage such as S3, which you can then query with PulsarSQL. I didn't get time to implement these features of Pulsar but they would be interesting to explore.
 
-## Improve data throughput
+### Improve data throughput
 I did some testing around message throughput and tried a few optimizations. However I was not able to increase it significantly. Further work could be done here.
 
 I tried topic partitioning, which enables all the machines in the Pulsar cluster to read from the topic, and not just one. I also tried bulk acknowledgement, which acks many messages at once instead of one by one.
@@ -148,13 +147,13 @@ For now, I am doing an async_send, which sends messages as fast as possible with
 
 In my consumer I am also writing to Postgres. I did confirm this is not responsible for slowing down the receiving of the Pulsar messages.
 
-## Read real-time OpenEEW data
+### Read real-time OpenEEW data
 You could connect to OpenEEW's real time messaging service and process those messages in Pulsar.
 
 In this project I instead played back some of history to simulate the data coming across in real time.
 
-## Improve earthquake detection functions
+### Improve earthquake detection functions
 Optimizing the detection is more of a data science undertaking. However OpenEEW already does have some pretty good detection functions in their [repo](https://github.com/openeew/openeew). This project could use those detection functions.
 
-## Compare other earthquake data to OpenEEW data
+### Compare other earthquake data to OpenEEW data
 Many national governments store data about earthquakes. You could pull down this data, and land it in postgres. From there you could compare government-reported quakes with OpenEEW-detected quakes to see what the differences are.
