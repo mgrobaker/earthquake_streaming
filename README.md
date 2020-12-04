@@ -1,3 +1,4 @@
+# QuakeWatch
 Reads accelerometer data to detect earthquakes in real time and enable historical analysis.
 
 # Table of contents
@@ -53,7 +54,7 @@ Larger circles indicate earthquakes of higher intensity. Darker circles indicate
 
 [Demo video](https://youtu.be/Sn6wSt9VvnA)
 
-[Demo link](https://public.tableau.com/profile/mark.grobaker#!/vizhome/QuakeWatchDemo/Dashboard)
+[Tableau used in demo](https://public.tableau.com/profile/mark.grobaker#!/vizhome/QuakeWatchDemo/Dashboard)
 
 # Tech stack
 I deployed a Pulsar cluster using the "from bare metal" guide, available from Pulsar docs [here](https://pulsar.apache.org/docs/en/deploy-bare-metal/). I hosted the cluster on several AWS EC2 instances.
@@ -66,9 +67,11 @@ Here is a picture of the whole tech stack:
 ![image](https://user-images.githubusercontent.com/5614366/101184543-da0aed00-361e-11eb-8efc-a668cfe39458.png)
 
 My AWS instances:
+
 ![image](https://user-images.githubusercontent.com/5614366/101184635-f3ac3480-361e-11eb-96cc-bebe87b5071b.png)
 
 This shows how Pulsar cluster interacts with clients. Further details are available on the Pulsar website
+
 ![image](https://user-images.githubusercontent.com/5614366/101184716-0888c800-361f-11eb-9e41-731582ec174b.png)
 
 # Code Walkthrough
@@ -78,6 +81,7 @@ This section walks through the code available in this repo.
 This code is run on a producer EC2 instance that sends data to Pulsar.
 
 `producer/import_data.py`
+
 This pulls down data from OpenEEW's S3 bucket by using the boto library, and stores it as local files.
 
 As shown in the code, I am only downloading a subset of the data, by limiting to specific dates and locations. I did not need all history for the purposes of this project.
@@ -87,6 +91,7 @@ OpenEEW has a library for downloading their data, but it is not functioning prop
 download_data() is the longest function in the file.
 
 `producer/send_data.py`
+
 This sends the data to the Pulsar cluster located at broker1_url. The logic is similar to import_data.py, but with some differences. It loops through the desired time ranges to locate and open the relevant data files. It then steps through each line of the file and sends each line to Pulsar.
 
 send_data() is the longest function in the file. This function also contains some logic to time how quickly messages are being sent to the cluster.
@@ -96,6 +101,7 @@ This code is run on a consumer EC2 instance that receives data from Pulsar.
 I also installed postgres on this same instance. Postgres could be put on another machine instead, if an alternative architecture is desired.
 
 `consumer/consumer.py`
+
 This listens for messages being sent to the topic. As they are received, it checks if the values should be stored for later analysis. If so, it loads them to the local postgres database.
 
 Let's recall the use case here. In this project, we are playing back history from 9/1/2020 - 9/10/2020. This is to simulate data coming across in real time. Now, most of this data being sent will be noise: slight shakings of the accelerometer from things like a nearby stream or a truck driving by. Actual earthquakes will be more rare, and also will cause much higher readings in the accelerometer. So the interesting data to store will be when an earthquake is going on, not when it is just noise.
@@ -109,6 +115,7 @@ We create a new row for postgres, which has the same number of columns as the ta
 Finally, back in the listen function, we insert the data into postgres.
 
 `consumer/process_accel_data.py`
+
 This script applies only to the postgres database. It does not connect to the Pulsar cluster. Whereas consumer.py would be running all the time, process_accel_data.py could be run on a daily or weekly basis.
 
 This is an ETL job. It reads the table which the consumer has written to ('accel_data'), transforms it, and loads the result in 'sensor_events' table. (This table is what is used to create the Tableau)
